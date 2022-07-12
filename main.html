@@ -1,0 +1,184 @@
+<title>OpenShell</title>
+<meta name="viewport" content="width=device-width">
+<body style="background-color: black; color: white">
+	<div style='width: 100%; font-family: "Consolas"; font-size: 12pt' id="command">Initializing command session...</div>
+	<div style="overflow: hidden; width: 1px; height: 1px"><input id="cmd" /></div>
+	<script>
+		var version = "1.0";
+		var cmd = document.getElementById("cmd"), temp = "", idle = true, password = "", folder = "", computerName = "<!--computer.name-->";
+		function clearScreen() {
+			temp = "";
+			update();
+		}
+		function addText(t) {
+			temp += t;
+			update();
+		}
+		function update() {
+			if (!idle) document.getElementById("command").innerText = temp + "_";
+			else if (password) document.getElementById("command").innerText = temp + "\n" + (folder ? folder : computerName) + "> " + document.getElementById("cmd").value + "_";
+			else document.getElementById("command").innerText = temp + document.getElementById("cmd").value + "_";
+		}
+		function focus() {
+			cmd.focus();
+		}
+		cmd.onkeypress = function(e) {
+			if (e.key == "Enter" && idle) {
+				const scrollingElement = (document.scrollingElement || document.body);
+				scrollingElement.scrollTop = scrollingElement.scrollHeight;
+				var command = document.getElementById("cmd").value;
+				document.getElementById("cmd").value = "";
+				idle = false;
+				if (password) {
+					if (command.startsWith("cls")) {
+						clearScreen();
+						idle = true;
+						update();
+						return;
+					}
+					if (command.startsWith("cd")) {
+						addText("\n" + (folder ? folder : computerName) + "> " + command + "\n");
+						var args = command.split(" ").slice(1);
+						for (var i = 0; i < args.length; i++) {
+							if (!args[i] || args[i] == "" || args[i].startsWith("/")) {
+								args.splice(i, 1);
+								i--;
+							}
+						}
+						var f = args.join(" ");
+						if (f.split("")[1] != ":") f = (folder ? folder : "") + ((!folder.endsWith("\\") && !folder.endsWith("/")) ? "/" : "") + f;
+						let xhr = new XMLHttpRequest();
+						xhr.open("POST", "/");
+						xhr.setRequestHeader("Accept", "application/json");
+						xhr.setRequestHeader("Content-Type", "application/json");
+						xhr.onload = () => {
+							if (xhr.status != 200) {
+								addText("Could not connect to server. Please read the console log on your browser for more information.");
+								idle = true;
+								update();
+								return;
+							}
+							if (xhr.responseText == "The command has been executed successfully.") folder = f;
+							else addText(xhr.responseText);
+							idle = true;
+							update();
+							const scrollingElement = (document.scrollingElement || document.body);
+							scrollingElement.scrollTop = scrollingElement.scrollHeight;
+						};
+						xhr.onerror = (e) => {
+							addText("Could not connect to server. Please read the console log on your browser for more information.");
+							idle = true;
+							update();
+						};
+						let data = JSON.stringify({
+						  "password": password,
+						  "command": "cd /d \"" + f + "\"",
+						  "folder": folder ? folder : null
+						});
+						xhr.send(data);
+						return;
+					}
+					addText("\n" + (folder ? folder : computerName) + "> " + command + "\n");
+					update();
+					let xhr = new XMLHttpRequest();
+					xhr.open("POST", "/");
+					xhr.setRequestHeader("Accept", "application/json");
+					xhr.setRequestHeader("Content-Type", "application/json");
+					xhr.onload = () => {
+						if (xhr.status != 200) {
+							addText("Could not connect to server. Please read the console log on your browser for more information.");
+							idle = true;
+							update();
+							return;
+						}
+						addText(xhr.responseText);
+						idle = true;
+						update();
+						const scrollingElement = (document.scrollingElement || document.body);
+						scrollingElement.scrollTop = scrollingElement.scrollHeight;
+					};
+					xhr.onerror = (e) => {
+						addText("Could not connect to server. Please read the console log on your browser for more information.");
+						idle = true;
+						update();
+					};
+					let data = JSON.stringify({
+					  "password": password,
+					  "command": command,
+					  "folder": folder ? folder : null
+					});
+					xhr.send(data);
+				}
+				else {
+					var pass = command;
+					addText(pass + "\n");
+					update();
+					let xhr = new XMLHttpRequest();
+					xhr.open("POST", "/");
+					xhr.setRequestHeader("Accept", "application/json");
+					xhr.setRequestHeader("Content-Type", "application/json");
+					xhr.onload = () => {
+						if (xhr.status != 200) {
+							addText("Could not connect to server. Please read the console log on your browser for more information.");
+							idle = true;
+							update();
+							return;
+						}
+						addText(xhr.responseText);
+						if (!xhr.responseText.includes("Authorization success")) addText("\n\nPlease type the password here: ");
+						else password = pass;
+						idle = true;
+						update();
+						const scrollingElement = (document.scrollingElement || document.body);
+						scrollingElement.scrollTop = scrollingElement.scrollHeight;
+					};
+					xhr.onerror = (e) => {
+						addText("Could not connect to server. Please read the console log on your browser for more information.\n\nPlease type the password here: ");
+						idle = true;
+						update();
+					};
+					let data = JSON.stringify({
+					  "password": pass,
+					  "command": "echo Authorization success!",
+					});
+					xhr.send(data);
+				}
+			}
+		}
+		window.onclick = function() {
+			focus();
+		}
+		window.onload = function() {
+			let xhr = new XMLHttpRequest();
+			xhr.open("GET", "https://raw.githubusercontent.com/NozakiYuu/OpenShell/master/version.txt");
+			xhr.onload = () => {
+				if (xhr.status == 200) {
+					idle = true;
+					update();
+					clearScreen();
+					if (version != xhr.responseText) addText("OpenShell v" + version + "\n(C) 2022 NozakiYuu. All right reserved.\n\nA newer version of this software is currently available.\nYou can download it at this website: https://www.github.com/NozakiYuu/OpenShell/releases.\n\nServer running on <!--system.name-->\n\nPlease type the password here: ");
+					else addText("OpenShell v" + version + "\n(C) 2022 NozakiYuu. All right reserved.\n\nYou are currenyly running the latest version.\n\nServer running on <!--system.name-->\n\nPlease type the password here: ");
+					setInterval(update, 50);
+					focus();
+				}
+				else {
+					idle = true;
+					update();
+					clearScreen();
+					addText("OpenShell v" + version + "\n(C) 2022 NozakiYuu. All right reserved.\n\nCould not check for software updates. Please try again.\n\nServer running on <!--system.name-->\n\nPlease type the password here: ");
+					setInterval(update, 50);
+					focus();
+				}
+			};
+			xhr.onerror = (e) => {
+				idle = true;
+				update();
+				clearScreen();
+				addText("OpenShell v" + version + "\n(C) 2022 NozakiYuu. All right reserved.\n\nCould not check for software updates. Please try again.\n\nServer running on <!--system.name-->\n\nPlease type the password here: ");
+				setInterval(update, 50);
+				focus();
+			};
+			xhr.send();
+		}
+	</script>
+</body>
