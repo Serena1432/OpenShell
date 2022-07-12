@@ -24,16 +24,22 @@ It aims to mostly replicate the Command Prompt, execute commands directly from y
 
 * **Step 3:** Create these two Environment Variables using the Environment Variables settings on your OS or the .env file:
 
-	password=(the password of the Command Prompt)
-	port=(the port of the Command Prompt, if not defined the port 3000 will be used)
-	
+```
+password=(the password of the Command Prompt)
+port=(the port of the Command Prompt, if not defined the port 3000 will be used)
+```
+
 * **Step 4:** Open a Command Prompt and cd (point) it into the cloned folder and run this command to install all the dependencies:
 
-	npm install
-	
+```
+npm install
+```
+
 * **Step 5:** Finally, run this command:
 
-	node main.js
+```
+node main.js
+```
 	
 And the shell will be open widely on your defined port. You can now use the webpage version of this shell using `localhost` (or your local IP address) with your defined port or use the HTTP POST method with these 2 parameters: `password` containing the authentication password and `command` containing the command you want to execute.
 
